@@ -1,0 +1,107 @@
+##Escribe un programa en Python para la gestión de un Polideportivo cuyos clientes pueden matricularse en varios deportes. La aplicación creada se conectará con una base de datos Postgres para guardar y consultar los datos. 
+
+import psycopg2
+
+# Conexión a la base de datos en Postgresql 
+ 
+print()  
+print("PRUEBA DE CONEXIÓN A POSTGRES Y VERSIÓN DE LA BASE DE DATOS")  
+print()  
+ 
+conx = None
+print("Conexión a la Base de Datos Postgres")  
+  
+try: 
+    conx = psycopg2.connect("dbname=postgres user=dev01@gmail.com password=dev01")  
+    print("Estableciendo conexión a la base de datos ...")  
+    cur = conx.cursor()  
+    print ("Conectado!\n")  
+    cur.execute('select version()')  
+    version = cur.fetchone()  
+    print ("versión de PostgreSQL\n", version)  
+ 
+except:  
+    print ("No se puede conectar con la Base de Datos") 
+
+
+# Creación de la tabla clientes con los campos: id, nombre, dni, fecha_nacimiento, telefono. la clave primaria será el dni .
+
+cur.execute("CREATE TABLE IF NOT EXISTS clientes (id serial PRIMARY KEY, dni varchar(9), dni nombre(60), fecha_nacimiento date, telefono varchar(9))")
+
+
+usr = int(input("Selecciona una opcion \n 1. Dar de alta un cliente con sus datos personales \n 2. Dar de baja un cliente \n 3. Mostrar los datos personales de un cliente o de todos \n 4. Matricular a un cliente en un deporte \n 5. Desmatricular a un cliente en un deporte \n 6. Mostrar los deportes de un cliente \n 7. Salir \n"))
+
+match usr:
+    case 1:
+        ## Ejercicio 1
+        print("Dar de alta un cliente con sus datos personales \n")
+        try:
+            dni = input("Introduce el dni del cliente: ")
+            nombre = input("Introduce el nombre del cliente: ")
+            fecha_nacimiento = input("Introduce la fecha de nacimiento del cliente: ")
+            telefono = input("Introduce el telefono del cliente: ")
+            cur.execute("INSERT INTO clientes (dni, nombre, fecha_nacimiento, telefono) VALUES (%s, %s, %s, %s)", (dni, nombre, fecha_nacimiento, telefono))
+            conx.commit()
+
+        except:
+            print("Error: No se ha podido dar de alta al cliente")
+
+    case 2:
+        ## Ejercicio 2
+        print("Dar de baja a un cliente \n")
+        try:
+            dni = input("Introduce el dni del cliente: ")
+            cur.execute("DELETE FROM clientes WHERE dni = %s", (dni,))
+            conx.commit()
+
+        except:
+            print("Error: No se ha podido dar de baja al cliente")
+
+    case 3:
+        ## Ejercicio 3
+        print("Mostrar los datos personales de un cliente o todos \n")
+
+        case = int(input("Selecciona una opcion \n 1. Mostrar los datos de un cliente \n 2. Mostrar los datos de todos los clientes \n"))
+
+        match case:
+            case 1:
+                try:
+                    dni = input("Introduce el dni del cliente: ")
+                    cur.execute("SELECT * FROM clientes WHERE dni = %s", (dni,))
+                    print(cur.fetchone())
+                except:
+                    print("Error: No se ha podido mostrar los datos del cliente")
+
+            case 2:
+                try:    
+                    cur.execute("SELECT * FROM clientes")
+                    tuplas = cur.fetchall()
+                    for tupla in tuplas:
+                        print(tupla)
+                except:
+                    print("Error: No se ha podido mostrar los datos de los clientes")
+
+    case 4:
+        ##Ejercicio 4
+        print("Ejercicio 4: \n")
+
+
+    case 5:
+        ##Ejercicio 5
+        print("Ejercicio 5: \n")
+
+    case 6:
+        ##Ejercicio 6
+        print("Ejercicio 6: \n")
+
+    case 7:
+        print("Saliendo del programa")
+        conx.close()
+        exit()
+        
+    case _:
+        print("El número introducido no es válido")
+
+
+
+
