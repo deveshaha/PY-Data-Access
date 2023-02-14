@@ -35,8 +35,7 @@ def ddbb_connection():
 
     return cur, conx
 
-def table_creation():
-
+def costumer_table_creation():
     try:
         #cur.execute("DROP TABLE IF EXISTS clientes")
         cur.execute("CREATE TABLE clientes (id SERIAL PRIMARY KEY, dni VARCHAR(9) UNIQUE NOT NULL, nombre VARCHAR(50) NOT NULL, fecha_nacimiento DATE NOT NULL, telefono VARCHAR(9) NOT NULL)")
@@ -109,8 +108,9 @@ def show_client():
         dni = input("Introduce el dni del cliente: ")
         # execute the query: example SELECT * FROM clientes WHERE dni = '20608949Y'
         # TODO
-        cur.execute("SELECT * FROM clientes WHERE dni = '%s'", (dni))
-        print(cur.fetchone())
+        query = "SELECT * FROM clientes WHERE dni = %s"
+        cur.execute(query, (dni,))
+        print()
     except:
         print("Error: No se ha podido mostrar los datos del cliente")
         print("Error: ", sys.exc_info()[1])
@@ -118,31 +118,64 @@ def show_client():
 def show_all_clients():
     try:    
         cur.execute("SELECT * FROM clientes")
-        tuplas = cur.fetchall()
-        for tupla in tuplas:
-            print(tupla)
+        print()
+        print("Datos de los clientes")
+        print()
+        while True:
+            row = cur.fetchone()
+            if row == None:
+                break
+            print(row)
+        print()
     except:
         print("Error: No se ha podido mostrar los datos de los clientes")
 
+def sport_table_creation():
+    try:
+        #cur.execute("DROP TABLE IF EXISTS deportes")
+        cur.execute("CREATE TABLE deportes (nombre VARCHAR(50) NOT NULL, precio INTEGER NOT NULL)")
+        conx.commit()
+        print("Tabla deportes creada correctamente")
+        print()
+
+    except:
+        print("Error: No se ha podido crear la tabla deportes")
+        print("Error: ", sys.exc_info()[1])
+
+def add_sport():
+    #Los deportes que ofrece el polideportivo son:  tenis, natación, atletismo, baloncesto y futbol. 
+    #check if sport exists
+    try:
+        cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("tenis", 10))
+        cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("natación", 15))
+        cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("atletismo", 20))
+        cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("baloncesto", 25))
+        cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("futbol", 30))
+        conx.commit()
+        print("Deportes añadidos correctamente")
+    except:
+        print("Error: No se ha podido añadir los deportes")
+        #Print the error
+        print("Error: ", sys.exc_info()[1])
+
 ddbb_connection()
-table_creation()
+costumer_table_creation()
+sport_table_creation()
+add_sport()
 
 usr = int(input("Selecciona una opcion \n 1. Dar de alta un cliente con sus datos personales \n 2. Dar de baja un cliente \n 3. Mostrar los datos personales de un cliente o de todos \n 4. Matricular a un cliente en un deporte \n 5. Desmatricular a un cliente en un deporte \n 6. Mostrar los deportes de un cliente \n 7. Salir \n"))
     
 match usr: 
 
     case 1:
-        ## Ejercicio 1
         print("Dar de alta un cliente con sus datos personales \n")
         add_client()
 
     case 2:
-        ## Ejercicio 2
         print("Dar de baja a un cliente \n")
         delete_client()
 
     case 3:
-        ## Ejercicio 3
         print("Mostrar los datos personales de un cliente o todos \n")
 
         case = int(input("Selecciona una opcion \n 1. Mostrar los datos de un cliente \n 2. Mostrar los datos de todos los clientes \n"))
@@ -159,7 +192,8 @@ match usr:
 
     case 4:
         ##Ejercicio 4
-        print("Ejercicio 4: \n")
+        print("Matricular a un cliente en un deporte \n")
+
 
 
     case 5:
