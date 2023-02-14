@@ -100,12 +100,14 @@ def delete_client():
     try:
         dni = input("Introduce el dni del cliente: ")
         cur.execute("DELETE FROM clientes WHERE dni = %s", (dni,))
-        cur.execute("DELETE FROM clientes_deporte WHERE dni = %s", (dni,))
+        cur.execute("DELETE FROM clientes_deportes WHERE dni = %s", (dni,))
         conx.commit()
         print("Cliente dado de baja correctamente")
 
     except:
         print("Error: No se ha podido dar de baja al cliente")
+        print("Error: ", sys.exc_info()[1])
+        print()
 
 def show_client():
     cur = conx.cursor()
@@ -119,7 +121,7 @@ def show_client():
         if cliente == None:
             print("El cliente no existe")
         else:
-            objCliente = Clientes(cliente[0], cliente[1], cliente[2], cliente[3])
+            objCliente = Clientes(cliente[0], cliente[1], cliente[2], cliente[3], [])
             print("Datos del cliente:")
             print()
             print(objCliente.__datos__())
@@ -140,7 +142,7 @@ def show_all_clients():
             if row == None:
                 break
             #print(row[0], row[1], row[2], row[3], row[4])
-            objCliente = Clientes(row[1], row[2], row[3], row[4])
+            objCliente = Clientes(row[1], row[2], row[3], row[4], [])
             print(objCliente.__datos__())
         print()
     except:
@@ -314,24 +316,30 @@ def unenroll_client():
         #delete client from clientes_deportes table
         print("Desmatricular a un cliente en un deporte \n")
         try:
-            dni = input("Introduce el DNI del cliente: ")
+            input_dni = input("Introduce el DNI del cliente: ")
             #check if client exists
-            cur.execute("SELECT dni FROM clientes WHERE dni = %s", (dni))
+            cur.execute("SELECT dni FROM clientes WHERE dni = %s", (input_dni))
             if cur.rowcount == 0:
                 print("El cliente no existe")
                 return
             else:
-                nombre = input("Introduce el nombre del deporte: ")
+                input_deporte = input("Introduce el deporte: ")
                 #check if sport exists
-                cur.execute("SELECT nombre FROM deportes WHERE nombre = %s", (nombre))
+                cur.execute("SELECT nombre FROM deportes WHERE nombre = %s", (input_deporte))
                 if cur.rowcount == 0:
                     print("El deporte no existe")
                     return
                 else:
-                    cur.execute("DELETE FROM clientes_deportes WHERE dni = %s AND nombre = %s", (dni, nombre))
-            conx.commit()
-            print("Cliente desmatriculado correctamente")
-            print()
+                    #check if client is enrolled in sport
+                    cur.execute("SELECT dni FROM clientes_deportes WHERE dni = %s AND nombre = %s", (input_dni, input_deporte))
+                    if cur.rowcount == 0:
+                        print("El cliente no está matriculado en ese deporte")
+                        return
+                    else:
+                        cur.execute("DELETE FROM clientes_deportes WHERE dni = %s AND nombre = %s", (input_dni, input_deporte))
+                        conx.commit()
+                        print("El cliente se ha desmatriculado del deporte")
+                        print()
     
         except:
             print("Error: No se ha podido desmatricular al cliente")
@@ -353,15 +361,17 @@ def show_client_sports():
             print("El cliente no existe")
             return
         else:
-            cur.execute("SELECT nombre, horario FROM clientes_deportes WHERE dni = %s", (dni))
-            print("Deportes del cliente: ")
+            query = "SELECT nombre, horario FROM clientes_deportes WHERE dni = %s"
+            cur.execute(query, (dni))
+            # pass data to object in Class "Cliente" and print it
             for row in cur.fetchall():
-                print(row)
+                print("Deporte: ", row[0], "Horario: ", row[1])
 
     except:
         print("Error: No se ha podido mostrar los deportes del cliente")
         #Print the error
         print("Error: ", sys.exc_info()[1])
+        print()
 
 #Call the functions
 ddbb_connection()

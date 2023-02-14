@@ -6,7 +6,7 @@ class Clientes:
     nombre: str
     fecha_nacimiento: str
     telefono: str
-    #deportes: list
+    deportes: list
 
     def __datos__(self):
         print(f"""
