@@ -30,14 +30,11 @@ def ddbb_connection():
     except:  
         print ("No se puede conectar con la Base de Datos") 
 
-
-
 def costumer_table_creation():
 
     cur = conx.cursor()
 
     try:
-        #cur.execute("DROP TABLE IF EXISTS clientes")
         cur.execute("CREATE TABLE IF NOT EXISTS clientes (id SERIAL PRIMARY KEY, dni VARCHAR(9) UNIQUE NOT NULL, nombre VARCHAR(50) NOT NULL, fecha_nacimiento DATE NOT NULL, telefono VARCHAR(9) NOT NULL)")
         conx.commit()
         print("Tabla clientes creada correctamente")
@@ -164,7 +161,6 @@ def sport_table_creation():
         print("Error: ", sys.exc_info()[1])
 
 def add_sport():
-    #Los deportes que ofrece el polideportivo son:  tenis, natación, atletismo, baloncesto y futbol. 
 
     cur = conx.cursor()
 
@@ -200,8 +196,6 @@ def client_sport_table_creation():
     cur = conx.cursor()
 
     try:
-        #cur.execute("DROP TABLE IF EXISTS clientes_deportes")
-        #this table will get dni from clientes and name form deportes, also will have a horario field
         query = "CREATE TABLE IF NOT EXISTS clientes_deportes (id SERIAL PRIMARY KEY, dni VARCHAR(9) NOT NULL, nombre VARCHAR(50) NOT NULL, horario VARCHAR(50) NOT NULL, FOREIGN KEY (dni) REFERENCES clientes(dni), FOREIGN KEY (nombre) REFERENCES deportes(nombre))"
         cur.execute(query)
         conx.commit()
@@ -254,7 +248,6 @@ def refresh_ddbb():
     cur = conx.cursor()
 
     try:
-        #delete table if exists using DROP CASCADE
         cur.execute("DROP TABLE IF EXISTS clientes_deportes CASCADE")
         cur.execute("DROP TABLE IF EXISTS deportes CASCADE")
         cur.execute("DROP TABLE IF EXISTS clientes CASCADE")
@@ -269,7 +262,7 @@ def add_dummy_data():
 
     cur = conx.cursor()
 
-    #add dummy data to clientes table, DNI, nombre, fecha_nacimiento, telefono
+    #adding dummy data to clientes table, DNI, nombre, fecha_nacimiento, telefono
     print("Adding data to clientes...")
     print()
     try:
@@ -287,7 +280,6 @@ def add_dummy_data():
         #Print the error
         print("Error: ", sys.exc_info()[1])
 
-    #add the same clients to clientes_deportes table
     print("Adding data to clientes_deportes...")
     try:
         cur.execute("INSERT INTO clientes_deportes (dni, nombre, horario) VALUES (%s, %s, %s)", ("12345678A", "atletismo", "10:00"))
@@ -312,31 +304,27 @@ def add_dummy_data():
 def unenroll_client():
     
         cur = conx.cursor()
-    
-        #delete client from clientes_deportes table
+
         print("Desmatricular a un cliente en un deporte \n")
         try:
-            input_dni = input("Introduce el DNI del cliente: ")
-            #check if client exists
-            cur.execute("SELECT dni FROM clientes WHERE dni = %s", (input_dni))
+            dni = input("Introduce el DNI del cliente: ")
+            cur.execute("SELECT dni FROM clientes WHERE dni = %s", (dni,))
             if cur.rowcount == 0:
                 print("El cliente no existe")
                 return
             else:
                 input_deporte = input("Introduce el deporte: ")
-                #check if sport exists
-                cur.execute("SELECT nombre FROM deportes WHERE nombre = %s", (input_deporte))
+                cur.execute("SELECT nombre FROM deportes WHERE nombre = %s", (input_deporte,))
                 if cur.rowcount == 0:
                     print("El deporte no existe")
                     return
                 else:
-                    #check if client is enrolled in sport
-                    cur.execute("SELECT dni FROM clientes_deportes WHERE dni = %s AND nombre = %s", (input_dni, input_deporte))
+                    cur.execute("SELECT dni FROM clientes_deportes WHERE dni = %s AND nombre = %s", (dni, input_deporte,))
                     if cur.rowcount == 0:
-                        print("El cliente no está matriculado en ese deporte")
+                        print("El cliente no esta matriculado en ese deporte")
                         return
                     else:
-                        cur.execute("DELETE FROM clientes_deportes WHERE dni = %s AND nombre = %s", (input_dni, input_deporte))
+                        cur.execute("DELETE FROM clientes_deportes WHERE dni = %s AND nombre = %s", (dni, input_deporte,))
                         conx.commit()
                         print("El cliente se ha desmatriculado del deporte")
                         print()
@@ -350,22 +338,19 @@ def unenroll_client():
 def show_client_sports():
         
     cur = conx.cursor()
-
-    #show client sports
-    print("Mostrar los deportes de un cliente \n")
     try:
         dni = input("Introduce el DNI del cliente: ")
         #check if client exists
-        cur.execute("SELECT dni FROM clientes WHERE dni = %s", (dni))
+        cur.execute("SELECT dni FROM clientes WHERE dni = %s", (dni,))
         if cur.rowcount == 0:
             print("El cliente no existe")
             return
         else:
-            query = "SELECT nombre, horario FROM clientes_deportes WHERE dni = %s"
-            cur.execute(query, (dni))
-            # pass data to object in Class "Cliente" and print it
-            for row in cur.fetchall():
-                print("Deporte: ", row[0], "Horario: ", row[1])
+            cur.execute("SELECT nombre, horario FROM clientes_deportes WHERE dni = %s", (dni,))
+            print("Deportes del cliente: ")
+            for row in cur:
+                print(row)
+            print()
 
     except:
         print("Error: No se ha podido mostrar los deportes del cliente")
@@ -374,6 +359,7 @@ def show_client_sports():
         print()
 
 #Call the functions
+
 ddbb_connection()
 refresh_ddbb()
 costumer_table_creation()
@@ -393,46 +379,33 @@ while True:
         case 1:
             print("Dar de alta un cliente con sus datos personales \n")
             add_client()
-
         case 2:
             print("Dar de baja a un cliente \n")
             delete_client()
-
         case 3:
             print("Mostrar los datos personales de un cliente o todos \n")
-
             case = int(input("Selecciona una opcion \n 1. Mostrar los datos de un cliente \n 2. Mostrar los datos de todos los clientes \n"))
-
             match case:
                 case 1:
                     show_client()
                 case 2:
                     show_all_clients()
-                    #go back to main menu
-                    #usr = int(input("Selecciona una opcion \n 1. Dar de alta un cliente con sus datos personales \n 2. Dar de baja un cliente \n 3. Mostrar los datos personales de un cliente o de todos \n 4. Matricular a un cliente en un deporte \n 5. Desmatricular a un cliente en un deporte \n 6. Mostrar los deportes de un cliente \n 7. Salir \n"))
                 case _:
                     print("El número introducido no es válido")
 
         case 4:
-            ##Ejercicio 4
             print("Matricular a un cliente en un deporte \n")
             enroll_client_sport()
-
         case 5:
-            ##Ejercicio 5
             print("5. Desmatricular a un cliente en un deporte \n")
             unenroll_client()
-
         case 6:
-            ##Ejercicio 6
             print("Mostrar los deportes de un cliente \n")
             show_client_sports()
-
         case 7:
-            print("Saliendo del programa")
+            print("Saliendo del programa...")
             conx.close()
             exit()
-            
         case _:
             print("El número introducido no es válido")
 
