@@ -108,7 +108,9 @@ def delete_client():
     try:
         dni = input("Introduce el dni del cliente: ")
         cur.execute("DELETE FROM clientes WHERE dni = %s", (dni,))
+        cur.execute("DELETE FROM clientes_deporte WHERE dni = %s", (dni,))
         conx.commit()
+        print("Cliente dado de baja correctamente")
 
     except:
         print("Error: No se ha podido dar de baja al cliente")
@@ -145,7 +147,9 @@ def show_all_clients():
             row = cur.fetchone()
             if row == None:
                 break
-            print(row[0], row[1], row[2], row[3], row[4])
+            #print(row[0], row[1], row[2], row[3], row[4])
+            objCliente = Clientes(row[1], row[2], row[3], row[4])
+            print(objCliente.__datos__())
         print()
     except:
         print("Error: No se ha podido mostrar los datos de los clientes")
