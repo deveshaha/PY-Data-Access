@@ -4,16 +4,21 @@ import sys
 import psycopg2
 import re
 
-conx = psycopg2.connect("dbname=postgres user=postgres password=postgres") 
-cur = conx.cursor()
+from Cliente import Clientes
+
+conx = None
+conx = psycopg2.connect("dbname=postgres user=postgres password=postgres")
+
 
 def ddbb_connection():
     # Conexión a la base de datos en Postgresql 
     print()  
     print("PRUEBA DE CONEXIÓN A POSTGRES Y VERSIÓN DE LA BASE DE DATOS")  
     print()  
- 
-    conx = None
+
+    conx = psycopg2.connect("dbname=postgres user=postgres password=postgres") 
+    cur = conx.cursor()
+
     print("Conexión a la Base de Datos Postgres")  
     
     try: 
@@ -36,9 +41,12 @@ def ddbb_connection():
     return cur, conx
 
 def costumer_table_creation():
+
+    cur = conx.cursor()
+
     try:
         #cur.execute("DROP TABLE IF EXISTS clientes")
-        cur.execute("CREATE TABLE clientes (id SERIAL PRIMARY KEY, dni VARCHAR(9) UNIQUE NOT NULL, nombre VARCHAR(50) NOT NULL, fecha_nacimiento DATE NOT NULL, telefono VARCHAR(9) NOT NULL)")
+        cur.execute("CREATE TABLE IF NOT EXISTS clientes (id SERIAL PRIMARY KEY, dni VARCHAR(9) UNIQUE NOT NULL, nombre VARCHAR(50) NOT NULL, fecha_nacimiento DATE NOT NULL, telefono VARCHAR(9) NOT NULL)")
         conx.commit()
         print("Tabla clientes creada correctamente")
         print()
@@ -48,7 +56,8 @@ def costumer_table_creation():
         print("Error: ", sys.exc_info()[1])
 
 def add_client():
-    #get conx and cur data from ddbb_connection()
+
+    cur = conx.cursor()
 
     dni = input("Introduce el dni del cliente: ")
     try:
@@ -95,6 +104,7 @@ def add_client():
         print("Error: ", sys.exc_info()[1])
 
 def delete_client():
+    cur = conx.cursor()
     try:
         dni = input("Introduce el dni del cliente: ")
         cur.execute("DELETE FROM clientes WHERE dni = %s", (dni,))
@@ -104,36 +114,49 @@ def delete_client():
         print("Error: No se ha podido dar de baja al cliente")
 
 def show_client():
+    cur = conx.cursor()
     try:
         dni = input("Introduce el dni del cliente: ")
         # execute the query: example SELECT * FROM clientes WHERE dni = '20608949Y'
-        # TODO
-        query = "SELECT * FROM clientes WHERE dni = %s"
+        query = "SELECT dni, nombre, fecha_nacimiento, telefono FROM clientes WHERE dni = %s"
         cur.execute(query, (dni,))
+        cliente = cur.fetchone()
         print()
+        if cliente == None:
+            print("El cliente no existe")
+        else:
+            objCliente = Clientes(cliente[0], cliente[1], cliente[2], cliente[3])
+            print("Datos del cliente:")
+            print()
+            print(objCliente.__datos__())
+
     except:
         print("Error: No se ha podido mostrar los datos del cliente")
         print("Error: ", sys.exc_info()[1])
 
 def show_all_clients():
+    cur = conx.cursor()
     try:    
         cur.execute("SELECT * FROM clientes")
         print()
-        print("Datos de los clientes")
+        print("Datos del cliente")
         print()
         while True:
             row = cur.fetchone()
             if row == None:
                 break
-            print(row)
+            print(row[0], row[1], row[2], row[3], row[4])
         print()
     except:
         print("Error: No se ha podido mostrar los datos de los clientes")
+        print("Error: ", sys.exc_info()[1])
 
 def sport_table_creation():
+    cur = conx.cursor()
     try:
         #cur.execute("DROP TABLE IF EXISTS deportes")
-        cur.execute("CREATE TABLE deportes (nombre VARCHAR(50) NOT NULL, precio INTEGER NOT NULL)")
+        query = "CREATE TABLE IF NOT EXISTS deportes (id SERIAL PRIMARY KEY, nombre VARCHAR(50) UNIQUE NOT NULL, precio INTEGER NOT NULL)"
+        cur.execute(query)
         conx.commit()
         print("Tabla deportes creada correctamente")
         print()
@@ -144,7 +167,22 @@ def sport_table_creation():
 
 def add_sport():
     #Los deportes que ofrece el polideportivo son:  tenis, natación, atletismo, baloncesto y futbol. 
-    #check if sport exists
+
+    cur = conx.cursor()
+
+    print("Refreshing table deportes...")
+    print()
+    try:
+        cur.execute("DELETE FROM deportes")
+        conx.commit()
+        print("Refreshing table deportes completed")
+        print()
+    except:
+        print("Error: Refreshing table deportes failed")
+        #Print the error
+        print("Error: ", sys.exc_info()[1])
+
+
     try:
         cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("tenis", 10))
         cur.execute("INSERT INTO deportes (nombre, precio) VALUES (%s, %s)", ("natación", 15))
@@ -158,10 +196,65 @@ def add_sport():
         #Print the error
         print("Error: ", sys.exc_info()[1])
 
+def client_sport_table_creation():
+
+    cur = conx.cursor()
+
+    try:
+        #cur.execute("DROP TABLE IF EXISTS clientes_deportes")
+        #this table will get dni from clientes and name form deportes, also will have a horario field
+        query = "CREATE TABLE IF NOT EXISTS clientes_deportes (id SERIAL PRIMARY KEY, dni VARCHAR(9) NOT NULL, nombre VARCHAR(50) NOT NULL, horario VARCHAR(50) NOT NULL, FOREIGN KEY (dni) REFERENCES clientes(dni), FOREIGN KEY (nombre) REFERENCES deportes(nombre))"
+        cur.execute(query)
+        conx.commit()
+        print("Tabla clientes_deportes creada correctamente")
+        print()
+
+    except:
+        print("Error: No se ha podido crear la tabla clientes_deportes")
+        print("Error: ", sys.exc_info()[1])
+
+def add_client_sport():
+    cur = conx.cursor()
+    try:
+        dni = input("Introduce el dni del cliente: ")
+        cur.execute("SELECT * FROM clientes WHERE dni = %s", (dni,))
+        if cur.fetchone() == None:
+            print("Error: El cliente no existe")
+            add_client_sport()
+        else:
+            nombre = input("Introduce el nombre del deporte: ")
+            cur.execute("SELECT * FROM deportes WHERE nombre = %s", (nombre,))
+            if cur.fetchone() == None:
+                print("Error: El deporte no existe")
+                add_client_sport()
+            else:
+                horario = input("Introduce el horario del deporte: ")
+                try:
+                    if re.match("^[0-9]{2}:[0-9]{2}-[0-9]{2}:[0-9]{2}$", horario):
+                        cur.execute("SELECT * FROM clientes_deportes WHERE dni = %s AND nombre = %s", (dni, nombre))
+                        if cur.fetchone() != None:
+                            print("Error: El cliente ya esta matriculado en ese deporte")
+                        else:
+                            cur.execute("INSERT INTO clientes_deportes (dni, nombre, horario) VALUES (%s, %s, %s)", (dni, nombre, horario))
+                            conx.commit()
+                            print("Cliente matriculado correctamente")
+                    else:
+                        print("Error: El horario no es válido")
+                        add_client_sport()
+                except:
+                    print("Error: No se ha podido matricular al cliente")
+                    #Print the error
+                    print("Error: ", sys.exc_info()[1])
+    except:
+        print("Error: No se ha podido matricular al cliente")
+        #Print the error
+        print("Error: ", sys.exc_info()[1])
+
 ddbb_connection()
 costumer_table_creation()
 sport_table_creation()
 add_sport()
+client_sport_table_creation()
 
 usr = int(input("Selecciona una opcion \n 1. Dar de alta un cliente con sus datos personales \n 2. Dar de baja un cliente \n 3. Mostrar los datos personales de un cliente o de todos \n 4. Matricular a un cliente en un deporte \n 5. Desmatricular a un cliente en un deporte \n 6. Mostrar los deportes de un cliente \n 7. Salir \n"))
     
@@ -193,6 +286,7 @@ match usr:
     case 4:
         ##Ejercicio 4
         print("Matricular a un cliente en un deporte \n")
+        register_client_sport()
 
 
 
